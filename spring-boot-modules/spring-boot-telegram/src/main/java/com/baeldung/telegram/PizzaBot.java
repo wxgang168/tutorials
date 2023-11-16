@@ -21,7 +21,7 @@ public class PizzaBot extends AbilityBot {
     private final ResponseHandler responseHandler;
 
     public PizzaBot(Environment environment) {
-        super(environment.getProperty("BOT_TOKEN"), "baeldungbot");
+        super(environment.getProperty("BOT_TOKEN"), "xiaok168Bot");
         responseHandler = new ResponseHandler(silent, db);
     }
 
