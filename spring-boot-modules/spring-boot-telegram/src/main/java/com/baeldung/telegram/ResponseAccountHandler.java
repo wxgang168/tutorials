@@ -91,10 +91,10 @@ public class ResponseAccountHandler {
 		replyAccountOutTxt+
 		StringUtils.format("--------------------------{}", "\r\n") +
 		StringUtils.format("当前费率：{}  %{}", 0.00 , "\r\n") +
-	    StringUtils.format("入款金额：{}  %{}", totalIn , "\r\n") +
-	    StringUtils.format("应下金额：{}  %{}", totalIn , "\r\n") +
-	    StringUtils.format("已下金额：{}  %{}", totalOut , "\r\n") +
-	    StringUtils.format("未下金额：{}  %{}", totalIn.add(totalOut)  , "\r\n") +
+	    StringUtils.format("入款金额：{}  {}", totalIn , "\r\n") +
+	    StringUtils.format("应下金额：{}  {}", totalIn , "\r\n") +
+	    StringUtils.format("已下金额：{}  {}", totalOut , "\r\n") +
+	    StringUtils.format("未下金额：{}  {}", totalIn.add(totalOut)  , "\r\n") +
 	    StringUtils.format("{}", "\r\n") + 
 	    StringUtils.format("手续费用： 0.00 元{}", "\r\n");
 		
@@ -180,7 +180,6 @@ public class ResponseAccountHandler {
 					StringUtils.format("{}      XXXXX{}", rate , "\r\n") +
 					StringUtils.format("--------------------------{}", "\r\n") +
 					StringUtils.format("实时价格（三档）： {}", "\r\n") +
-					StringUtils.format("--------------------------{}", "\r\n") +
 				    StringUtils.format("{} 元 / {} = {} USDT{}", bigDecimal, rate, bigDecimal.doubleValue() /rate  , "\r\n");
 		} else {
 			//https://www.okx.com/api/v5/market/exchange-rate
@@ -190,7 +189,6 @@ public class ResponseAccountHandler {
 					StringUtils.format("{}      XXXXX{}", rate , "\r\n") +
 					StringUtils.format("--------------------------{}", "\r\n") +
 					StringUtils.format("实时价格（三档）： {}", "\r\n") +
-					StringUtils.format("--------------------------{}", "\r\n") +
 				    StringUtils.format("{} USDT * {} = {} 元{}", bigDecimal, rate, bigDecimal.doubleValue() *rate  , "\r\n");
 			
 		}
