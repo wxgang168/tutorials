@@ -5,11 +5,10 @@ import static com.baeldung.telegram.UserState.AWAITING_ACCOUNT;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.telegram.abilitybots.api.db.DBContext;
 import org.telegram.abilitybots.api.objects.MessageContext;
 import org.telegram.abilitybots.api.sender.SilentSender;
@@ -17,32 +16,34 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 
+import com.alibaba.fastjson.JSONObject;
+
 import cn.hutool.core.date.DateUtil;
-
-
+import cn.hutool.http.HttpUtil;
 
 public class ResponseAccountHandler {
-    private final SilentSender sender;
+    private SilentSender sender = null;
     private final Map<Long, UserState> chatStates;
-    @Autowired
-    UserRepository userRepository;
-    @Autowired
-    AccountRepository accountRepository;
+    private UserRepository userRepository;
+    private AccountRepository accountRepository;
+    
     public ResponseAccountHandler(SilentSender sender, DBContext db) {
         this.sender = sender;
         chatStates = db.getMap(Constants.CHAT_STATES);
+        userRepository = SpringUtils.getBean(UserRepository.class);
+        accountRepository = SpringUtils.getBean(AccountRepository.class);
     }
 
-    public void replyToStart(MessageContext ctx) {
+	public void replyToStart(MessageContext ctx) {
     	long chatId = ctx.chatId();
     	Long uid = ctx.user().getId();
     	SendMessage message = new SendMessage();
         message.setChatId(chatId);
     	
-        Optional<User> user = userRepository.findById(uid);
+        User user = userRepository.findById(uid).orElse(null);
     	if (user == null) {
     		User userNew = new User();
-    		userNew.setId(uid);
+    		userNew.setUid(uid);
             userRepository.save(userNew);
             
             message.setText(ACCOUNT_START_TEXT);
@@ -73,19 +74,19 @@ public class ResponseAccountHandler {
 		for (Account account: accountList) {
 			if (account.getIncome().floatValue() > 0) {
 				accountInList.add(account);
-				totalIn.add(account.getIncome());
+				totalIn = totalIn.add(account.getIncome());
 				replyAccountInTxt += StringUtils.format("{}   {} {}", DateUtil.format(account.getCreatedDate(), "HH:mm:ss"), account.getIncome(), "\r\n");
 			} else {
 				accountOutList.add(account);
-				totalOut.add(account.getIncome());
+				totalOut = totalOut.add(account.getIncome());
 				replyAccountOutTxt += StringUtils.format("{}   {} {}", DateUtil.format(account.getCreatedDate(), "HH:mm:ss"), account.getIncome(), "\r\n");
 			}
 		}
 		String replyAccountTxt = StringUtils.format("-------普通模式-------{}", "\r\n") +
-		StringUtils.format("{}日小记{}", DateUtil.today(), "\r\n") + 
-		StringUtils.format("入款： {} 笔", accountInList.size(), "\r\n") + 
+		StringUtils.format("{}  日小记{}", DateUtil.today(), "\r\n") + 
+		StringUtils.format("入款：  {} 笔{}", accountInList.size(), "\r\n") + 
 		replyAccountInTxt + 
-		StringUtils.format("下发： {} 笔", accountInList.size(), "\r\n") +
+		StringUtils.format("下发：  {} 笔{}", accountInList.size(), "\r\n") +
 		replyAccountOutTxt+
 		StringUtils.format("--------------------------{}", "\r\n") +
 		StringUtils.format("当前费率：{}  %{}", 0.00 , "\r\n") +
@@ -101,7 +102,7 @@ public class ResponseAccountHandler {
 	}
 	
 	public void replyToAccountButtons(long chatId, org.telegram.telegrambots.meta.api.objects.User user, Message message) {
-	    if (message.getText().equalsIgnoreCase("/结束记账")) {
+	    if (message.getText().equalsIgnoreCase("结束记账")) {
 	        stopChat(chatId);
 	    }
 
@@ -138,18 +139,46 @@ public class ResponseAccountHandler {
             
             sender.execute(sendMessage);
 	    } else {
-	    	unexpectedMessage(chatId);
+	    	unexpectedAccountMessage(chatId);
 	    }
 	}
 	
 	private String doRateCacul(long chatId, String flag, BigDecimal bigDecimal) {
 		// TODO Auto-generated method stub
+		String url = "https://www.okx.com/api/v5/market/exchange-rate";//指定URL
+		Map<String, Object> map = new HashMap<>();//存放参数
+		map.put("A", 100);
+		map.put("B", 200);
+		HashMap<String, String> headers = new HashMap<>();//存放请求头，可以存放多个请求头
+		headers.put("xxx", "xxxx");
+		//发送get请求并接收响应数据
+		String result= HttpUtil.createGet(url).addHeaders(headers).form(map).execute().body();
+		
+		OkxResp OkxRespObj = JSONObject.parseObject(result, OkxResp.class);
+		Double rate = 0.00d;
+		if (OkxRespObj.getCode().equals("0")) {
+			rate = Double.valueOf(OkxRespObj.getData().get(0).getUsdCny()); 
+		}
+		//发送post请求并接收响应数据
+//		String result= HttpUtil.createPost(url).addHeaders(headers).form(map).execute().body();
+
+		String returnStr = "";
 		if ("u".equals(flag)) {
 			//https://www.okx.com/api/v5/market/exchange-rate
+			returnStr = 
+					StringUtils.format("欧易(okx) USDT实时汇率 {}", "\r\n") +
+					StringUtils.format("实时价格（三档）： {}", "\r\n") +
+				    StringUtils.format("{} 元 / {} = {} USDT{}", bigDecimal, rate, bigDecimal.doubleValue() /rate  , "\r\n");
 		} else {
+			//https://www.okx.com/api/v5/market/exchange-rate
+			returnStr = 
+					StringUtils.format("欧易(okx) USDT实时汇率 {}", "\r\n") +
+					StringUtils.format("实时价格（三档）： {}", "\r\n") +
+				    StringUtils.format("{} USDT * {} = {} 元{}", bigDecimal, rate, bigDecimal.doubleValue() *rate  , "\r\n");
 			
 		}
-		return "OK";
+		
+		return returnStr;
 	}
 
 	private void doAccount(long chatId, Long uid, BigDecimal income) {
@@ -161,7 +190,12 @@ public class ResponseAccountHandler {
 		account.setCreatedDate(DateUtil.date());
 		accountRepository.save(account);
 	}
-
+	private void unexpectedAccountMessage(long chatId) {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+        sendMessage.setText("记账指令错误. 例如发送 +100 或者 -100");
+        sender.execute(sendMessage);
+    }
     private void unexpectedMessage(long chatId) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
@@ -172,7 +206,7 @@ public class ResponseAccountHandler {
 	private void stopChat(long chatId) {
 	    SendMessage sendMessage = new SendMessage();
 	    sendMessage.setChatId(chatId);
-	    sendMessage.setText("Thank you for your order. See you soon!\nPress /start to order again");
+	    sendMessage.setText("感谢您的使用.再见!\n发送 开始记账  再次开始！");
 	    chatStates.remove(chatId);
 	    sendMessage.setReplyMarkup(new ReplyKeyboardRemove(true));
 	    sender.execute(sendMessage);

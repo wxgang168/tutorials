@@ -4,26 +4,19 @@ package com.baeldung.telegram;
 import java.math.BigDecimal;
 import java.util.Date;
 
-import org.hibernate.annotations.NotFound;
-import org.hibernate.annotations.NotFoundAction;
-import org.hibernate.sql.Update;
 import org.springframework.data.annotation.CreatedDate;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.validation.constraints.NotNull;
+import jakarta.persistence.Id;
 
 @Entity
 public class Account {
-	@EmbeddedId
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    @Column(name = "id")
-    @NotNull(groups = Update.class,message = "修改时必传")
-    @NotFound(action = NotFoundAction.IGNORE)
-	protected Long id;
+	@Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    protected Long id;
 
     
     @Column(name = "uid")

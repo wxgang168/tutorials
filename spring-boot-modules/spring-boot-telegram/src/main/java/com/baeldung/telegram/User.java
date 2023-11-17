@@ -4,21 +4,21 @@ package com.baeldung.telegram;
 import java.util.Date;
 
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.Id;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
 @Entity
 public class User {
-    @Id
+	@Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @EmbeddedId
     protected Long id;
-
+    @Column
+    protected Long uid;
+    
     @Column
     protected String name;
 
@@ -45,4 +45,16 @@ public class User {
     public void setName(String name) {
         this.name = name;
     }
+
+	public Long getUid() {
+		return uid;
+	}
+
+	public void setUid(Long uid) {
+		this.uid = uid;
+	}
+
+	public void setCreatedDate(Date createdDate) {
+		this.createdDate = createdDate;
+	}
 }
