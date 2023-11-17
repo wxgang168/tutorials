@@ -15,6 +15,7 @@ import org.telegram.abilitybots.api.sender.SilentSender;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import com.alibaba.fastjson.JSONObject;
 
@@ -152,28 +153,44 @@ public class ResponseAccountHandler {
 		HashMap<String, String> headers = new HashMap<>();//存放请求头，可以存放多个请求头
 		headers.put("xxx", "xxxx");
 		//发送get请求并接收响应数据
-		String result= HttpUtil.createGet(url).addHeaders(headers).form(map).execute().body();
-		
-		OkxResp OkxRespObj = JSONObject.parseObject(result, OkxResp.class);
 		Double rate = 0.00d;
-		if (OkxRespObj.getCode().equals("0")) {
-			rate = Double.valueOf(OkxRespObj.getData().get(0).getUsdCny()); 
-		}
+		try {
+			//.addHeaders(headers).form(map)
+			String result= HttpUtil.createGet(url).execute().body();
+			OkxResp OkxRespObj = JSONObject.parseObject(result, OkxResp.class);
+			
+			if (OkxRespObj.getCode().equals("0")) {
+				rate = Double.valueOf(OkxRespObj.getData().get(0).getUsdCny()); 
+			} else  {
+				System.out.print(result);
+			}
+		} catch (Exception e) {
+            System.out.print(e.getMessage());
+        }
+		
 		//发送post请求并接收响应数据
 //		String result= HttpUtil.createPost(url).addHeaders(headers).form(map).execute().body();
 
-		String returnStr = "";
+		String returnStr = "7.36";
 		if ("u".equals(flag)) {
 			//https://www.okx.com/api/v5/market/exchange-rate
 			returnStr = 
 					StringUtils.format("欧易(okx) USDT实时汇率 {}", "\r\n") +
+					StringUtils.format("--------------------------{}", "\r\n") +
+					StringUtils.format("{}      XXXXX{}", rate , "\r\n") +
+					StringUtils.format("--------------------------{}", "\r\n") +
 					StringUtils.format("实时价格（三档）： {}", "\r\n") +
+					StringUtils.format("--------------------------{}", "\r\n") +
 				    StringUtils.format("{} 元 / {} = {} USDT{}", bigDecimal, rate, bigDecimal.doubleValue() /rate  , "\r\n");
 		} else {
 			//https://www.okx.com/api/v5/market/exchange-rate
 			returnStr = 
 					StringUtils.format("欧易(okx) USDT实时汇率 {}", "\r\n") +
+					StringUtils.format("--------------------------{}", "\r\n") +
+					StringUtils.format("{}      XXXXX{}", rate , "\r\n") +
+					StringUtils.format("--------------------------{}", "\r\n") +
 					StringUtils.format("实时价格（三档）： {}", "\r\n") +
+					StringUtils.format("--------------------------{}", "\r\n") +
 				    StringUtils.format("{} USDT * {} = {} 元{}", bigDecimal, rate, bigDecimal.doubleValue() *rate  , "\r\n");
 			
 		}
